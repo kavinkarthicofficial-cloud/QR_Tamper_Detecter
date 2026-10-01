@@ -1,0 +1,94 @@
+{
+  "protocol": "leave-one-attack-out",
+  "classifier_threshold": 0.5,
+  "autoencoder_threshold": 0.03869034249851031,
+  "autoencoder_score_mode": "local",
+  "folds": {
+    "aligned_overlay": {
+      "trained_on": [
+        "branded_sticker",
+        "loose_overlay",
+        "partial_patch"
+      ],
+      "supervised": {
+        "detection_rate": 0.99,
+        "fpr": 0.0,
+        "auc": 0.9999
+      },
+      "autoencoder": {
+        "detection_rate": 1.0,
+        "fpr": 0.015,
+        "auc": 1.0
+      }
+    },
+    "loose_overlay": {
+      "trained_on": [
+        "aligned_overlay",
+        "branded_sticker",
+        "partial_patch"
+      ],
+      "supervised": {
+        "detection_rate": 1.0,
+        "fpr": 0.0,
+        "auc": 1.0
+      },
+      "autoencoder": {
+        "detection_rate": 1.0,
+        "fpr": 0.015,
+        "auc": 0.99995
+      }
+    },
+    "branded_sticker": {
+      "trained_on": [
+        "aligned_overlay",
+        "loose_overlay",
+        "partial_patch"
+      ],
+      "supervised": {
+        "detection_rate": 1.0,
+        "fpr": 0.0,
+        "auc": 1.0
+      },
+      "autoencoder": {
+        "detection_rate": 1.0,
+        "fpr": 0.015,
+        "auc": 1.0
+      }
+    },
+    "partial_patch": {
+      "trained_on": [
+        "aligned_overlay",
+        "branded_sticker",
+        "loose_overlay"
+      ],
+      "supervised": {
+        "detection_rate": 0.12,
+        "fpr": 0.0,
+        "auc": 0.7829999999999999
+      },
+      "autoencoder": {
+        "detection_rate": 1.0,
+        "fpr": 0.015,
+        "auc": 0.9997
+      }
+    },
+    "none (all types seen)": {
+      "trained_on": [
+        "aligned_overlay",
+        "branded_sticker",
+        "loose_overlay",
+        "partial_patch"
+      ],
+      "supervised": {
+        "detection_rate": 0.9175,
+        "fpr": 0.0,
+        "auc": 0.9939625000000001
+      },
+      "autoencoder": {
+        "detection_rate": 1.0,
+        "fpr": 0.015,
+        "auc": 0.9999125
+      }
+    }
+  }
+}
