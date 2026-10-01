@@ -72,9 +72,63 @@ Figures in `results/`: `score_histogram.png`, `roc_curve.png`, `confusion_matrix
 `baseline_vs_autoencoder.png`. All numbers are in `results/metrics.json` and
 `results/baseline_supervised.json`.
 
-> **Caveat:** these are results on *simulated* phone photos (see "Data" below). They show that
-> the method works and how it behaves. They are not a field accuracy figure. The next step is
-> to repeat the evaluation on real photographs (see "Using real photos").
+## Results on 40 real QR photos from the web
+
+`fetch_web_qr.py` downloaded freely licensed photographs of QR codes in the wild from
+Wikimedia Commons: street signs, shop and charity payment codes, posters, museum plaques,
+business cards and notices from many countries. Credits are in [ATTRIBUTION.md](ATTRIBUTION.md).
+`web_experiment.py` then treats **each real photo as one deployed poster** and runs the full
+QRGuard workflow on it:
+
+1. Rectify the photo so the real QR is axis-aligned, keeping the real surroundings as context.
+2. **Train a new autoencoder** for that poster on 300 phone shots simulated from the real
+   photo (genuine only), and calibrate its threshold on 80 more.
+3. **Test** it on 80 new genuine shots and 40 shots per attack, with the stickers placed over
+   the real QR. Test it also on the **untouched original web photo**, and on the original
+   photo with each sticker warped onto it in its true perspective.
+
+| Test (40 posters, `local` score) | Result |
+|---|---|
+| ROC AUC per poster | mean **0.9997**, median 1.000, worst 0.9958. All 40 posters ≥ 0.99 |
+| Tampered shots detected | **98.1%** (6,350 shots) |
+| Genuine shots falsely flagged | **0.48%** (3,125 shots) |
+| Accuracy | 98.6% |
+| Original web photo accepted as genuine | **39 / 40** (97.5%) |
+| Original photo with a perspective-correct sticker flagged | **160 / 160** (100%) |
+
+| Attack | `mean` score | `local` score |
+|---|---|---|
+| aligned_overlay | 99.5% | 99.1% |
+| loose_overlay | 99.7% | 98.4% |
+| branded_sticker | 100% | 98.9% |
+| partial_patch | **34.8%** | **96.1%** |
+| false-positive rate | 0.22% | 0.48% |
+
+On real posters the gap between the two scores is much larger than on the synthetic one.
+The global mean catches only about a third of the small patch attacks, while the local score
+catches 96%. That confirms the local score is the right choice for deployment.
+
+**QR finder on raw web photos (real data, no simulation):** out of 97 photos examined, the QR
+was located in 81% and decoded in 63%. Photos where it failed mostly had small, distant or
+heavily angled codes. In the simulated shots, the QR was not found in 2.3% of genuine and
+0.8% of tampered shots; those were excluded from the scores above.
+
+**A training bug found and fixed along the way.** In a first run (archived in
+`results/web_run1_early_stopping/`), 3 of the first 21 posters had weak detection. Their
+models had early-stopped at 18–25 epochs while still blurry, and had 4–6× higher genuine
+validation error. Retraining one of them without early stopping showed that validation error
+kept falling, and its threshold dropped about 3×. The final run uses the same 60-epoch budget
+as the main model and allows early stopping only after epoch 40. That rule depends on
+validation data alone. Every poster was then re-run under it.
+
+Figures: `results/web/summary.png` (detection per attack and per-poster AUC) and
+`results/web/examples.png` (original photo, stickered, and partial patch, with error maps).
+Per-poster numbers are in `results/web/per_poster.csv` and `results/web/log.txt`.
+
+> **What is still simulated:** the photos and QR codes are real. The extra phone shots of each
+> poster are simulated, and the stickers are composited digitally rather than printed and
+> stuck on. The last step is a physical test: print a poster, take about 50 phone photos,
+> paste a printed sticker on it, and photograph it again (see "Using real photos").
 
 ## Quick start
 
@@ -100,6 +154,12 @@ Tip: Python buffers its output when redirected to a file. To watch progress live
 | `python3 export_mobile.py` | TorchScript + PyTorch Mobile (`.ptl`) model and `qrguard_mobile.json` for on-device use |
 | `python3 app.py` | Phone-friendly web app (camera upload, verdict, reconstruction, error heatmap) |
 | `python3 -m pytest -q` | Smoke tests |
+| `python3 fetch_web_qr.py` | Downloads real QR photos from Wikimedia Commons into `data/web/raw/` with attribution |
+| `python3 web_experiment.py` | Trains and tests one model per real photo (about 2–4 min per poster; resumable, skips finished posters) |
+
+The web experiment takes about 2 hours for 40 posters. To keep it running after you close the
+terminal, start it with `nohup caffeinate -ims python3 web_experiment.py > web.log 2>&1 &`
+and keep the laptop lid open.
 
 **Using the web app from a phone:** run `python3 app.py` on a laptop, connect the phone to the
 same Wi-Fi, and open `http://<laptop-ip>:8000`. Tapping the upload area opens the rear camera.
@@ -168,17 +228,19 @@ For a physical demo, print `poster_genuine.png`, photograph it, paste the printe
 qrguard/            config, preprocess, model, data loading, calibration, detector, synth
 generate_data.py    train.py    evaluate.py    baseline_supervised.py
 detect.py           calibrate.py    export_mobile.py    app.py    templates/index.html
+fetch_web_qr.py     web_experiment.py    ATTRIBUTION.md      (real web QR photos)
 tests/              smoke tests
-run_pipeline.sh     reproduces everything
+run_pipeline.sh     reproduces the synthetic results
 ```
 
 ## Limitations
 
 - **One model per poster design.** That is the point of one-class training, but each new
   poster needs its own genuine photos. Fine-tuning from an existing checkpoint takes minutes.
-- **The evaluation is synthetic.** Real printing, paper texture, glare and camera pipelines
-  will widen the genuine error distribution, so the threshold must be re-calibrated on real
-  photos.
+- **No physical tampering has been tested yet.** The real-photo experiment uses real posters
+  and QR codes, but simulated extra shots and digitally composited stickers. Real glare, paper
+  texture and different phone cameras will widen the genuine error distribution, so the
+  threshold should be re-calibrated on real photos of the deployed poster.
 - **The QR must be found.** If a sticker makes the code undetectable, the app reports
   "No QR code found" instead of a verdict. An unscannable code is itself suspicious on a
   payment poster.
