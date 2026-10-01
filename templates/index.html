@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QRGuard</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --surface: #ffffff; --ink: #1b1b1f; --muted: #5d5d66; --line: #e2e0da;
+    --accent: #8a1538; --ok: #1f7a3a; --ok-bg: #e5f4ea; --bad: #b3261e; --bad-bg: #fbe7e5;
+    --warn: #8a5a00; --warn-bg: #fdf1d8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141417; --surface: #1d1d22; --ink: #ececf0; --muted: #a2a2ad; --line: #2e2e36;
+      --accent: #e46a8c; --ok: #6fd48c; --ok-bg: #16301f; --bad: #ff8a80; --bad-bg: #3a1714;
+      --warn: #ffcc66; --warn-bg: #3a2c0d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+  header h1 { margin: 0; font-size: 28px; letter-spacing: -0.01em; }
+  header h1 span { color: var(--accent); }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-top: 20px; }
+  .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 28px 16px; text-align: center; cursor: pointer; }
+  .drop.over { border-color: var(--accent); }
+  .btn { display: inline-block; background: var(--accent); color: #fff; border: 0; border-radius: 10px;
+         padding: 12px 20px; font: inherit; font-weight: 600; cursor: pointer; }
+  .btn:focus-visible, .chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .hint { color: var(--muted); font-size: 14px; margin-top: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip { border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 999px;
+          padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  .verdict { border-radius: 12px; padding: 16px 18px; display: flex; gap: 14px; align-items: center; }
+  .verdict.genuine { background: var(--ok-bg); color: var(--ok); }
+  .verdict.tampered { background: var(--bad-bg); color: var(--bad); }
+  .verdict.no_qr { background: var(--warn-bg); color: var(--warn); }
+  .verdict .big { font-size: 24px; font-weight: 800; letter-spacing: 0.02em; }
+  .verdict .sub { color: var(--ink); opacity: 0.85; font-size: 14px; }
+  .meter { position: relative; height: 10px; border-radius: 6px; background: var(--line); margin: 18px 0 6px; }
+  .meter .fill { position: absolute; inset: 0 auto 0 0; border-radius: 6px; }
+  .meter .thr { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--ink); }
+  .meter-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .grid figure { margin: 0; }
+  .grid img, .photo img { width: 100%; border-radius: 8px; display: block; image-rendering: pixelated; }
+  .photo img { image-rendering: auto; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 14px; margin: 16px 0 0; }
+  dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; font-family: ui-monospace, Menlo, monospace; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .spinner { display: none; color: var(--muted); margin-top: 12px; }
+  @media (max-width: 720px) { .two { grid-template-columns: 1fr; } .grid { gap: 6px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>QR<span>Guard</span></h1>
+    <p>Check a QR poster for a pasted-over sticker <em>before</em> you scan it.</p>
+  </header>
+
+  <section class="card">
+    <label class="drop" id="drop" for="file">
+      <div><strong>Take or upload a photo of the poster</strong></div>
+      <div class="hint">Include the whole QR code and a little of the poster around it.</div>
+      <div style="margin-top:14px"><span class="btn">Open camera / choose photo</span></div>
+    </label>
+    <input id="file" type="file" accept="image/*" capture="environment" hidden>
+    {% if samples %}
+    <div class="hint">Or try a test photo:</div>
+    <div class="chips">
+      {% for s in samples %}<button class="chip" data-path="{{ s.path }}">{{ s.label }}</button>{% endfor %}
+    </div>
+    {% endif %}
+    <div class="spinner" id="spinner">Analysing…</div>
+  </section>
+
+  <section class="card" id="result" hidden>
+    <div class="verdict" id="verdict">
+      <div>
+        <div class="big" id="vtitle"></div>
+        <div class="sub" id="vsub"></div>
+      </div>
+    </div>
+    <div id="meterbox">
+      <div class="meter"><div class="fill" id="fill"></div><div class="thr" id="thr"></div></div>
+      <div class="meter-labels"><span>0</span><span>threshold</span><span id="mmax"></span></div>
+    </div>
+    <div class="two" style="margin-top:16px">
+      <div class="photo"><img id="photo" alt="Photo with the detected QR outlined"></div>
+      <div>
+        <div class="grid" id="tiles">
+          <figure><img id="in" alt="Aligned input"><figcaption>Aligned input</figcaption></figure>
+          <figure><img id="rec" alt="Reconstruction"><figcaption>Reconstruction</figcaption></figure>
+          <figure><img id="heat" alt="Error heatmap"><figcaption>Error heatmap</figcaption></figure>
+        </div>
+        <dl>
+          <dt>Score</dt><dd id="score"></dd>
+          <dt>Threshold</dt><dd id="threshold"></dd>
+          <dt>Decoded</dt><dd id="payload"></dd>
+          <dt>Latency</dt><dd id="latency"></dd>
+        </dl>
+      </div>
+    </div>
+    <p class="hint">The autoencoder was trained only on photos of the genuine poster. Anything it cannot
+      reconstruct (a different QR pattern, sticker edges, shadows) raises the error; bright areas in the heatmap
+      show where.</p>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const file = $('file'), drop = $('drop');
+
+async function run(promise) {
+  $('spinner').style.display = 'block';
+  try {
+    const r = await promise;
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    show(d);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  } finally {
+    $('spinner').style.display = 'none';
+  }
+}
+
+function upload(f) {
+  const fd = new FormData();
+  fd.append('photo', f);
+  run(fetch('analyze', { method: 'POST', body: fd }));
+}
+
+function show(d) {
+  $('result').hidden = false;
+  const v = $('verdict');
+  v.className = 'verdict ' + d.status;
+  const titles = { genuine: 'Looks genuine', tampered: 'Possible tampering', no_qr: 'No QR code found' };
+  const subs = {
+    genuine: 'The poster matches what QRGuard learned. Still check the payee name in your UPI app.',
+    tampered: 'This QR region does not match the genuine poster. A sticker may have been pasted over it — do not pay.',
+    no_qr: 'Retake the photo closer and straighter, with the full QR code visible.'
+  };
+  $('vtitle').textContent = titles[d.status];
+  $('vsub').textContent = subs[d.status];
+  $('photo').src = d.photo;
+  const has = d.status !== 'no_qr';
+  $('tiles').style.display = has ? '' : 'none';
+  $('meterbox').style.display = has ? '' : 'none';
+  if (has) {
+    $('in').src = d.input; $('rec').src = d.recon; $('heat').src = d.heat;
+    const max = d.threshold * 4;
+    const pct = Math.min(d.score / max, 1) * 100;
+    $('fill').style.width = pct + '%';
+    $('fill').style.background = d.status === 'tampered' ? 'var(--bad)' : 'var(--ok)';
+    $('thr').style.left = '25%';
+    $('mmax').textContent = '4× threshold';
+    $('score').textContent = d.score.toFixed(5) + '  (' + d.score_over_threshold.toFixed(2) + '× threshold)';
+  }
+  $('threshold').textContent = d.threshold.toFixed(5);
+  $('payload').textContent = d.payload || (has ? '(not decodable)' : '—');
+  $('latency').textContent = d.latency_ms + ' ms';
+  $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+file.addEventListener('change', () => file.files[0] && upload(file.files[0]));
+['dragover', 'dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', ev => ev.dataTransfer.files[0] && upload(ev.dataTransfer.files[0]));
+document.querySelectorAll('.chip').forEach(b =>
+  b.addEventListener('click', () => run(fetch('sample?path=' + encodeURIComponent(b.dataset.path)))));
+</script>
+</body>
+</html>
