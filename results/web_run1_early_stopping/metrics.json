@@ -1,0 +1,66 @@
+{
+  "n_posters": 1,
+  "score_mode": "local",
+  "minutes_this_run": 0.0,
+  "per_poster_sets": {
+    "train": 300,
+    "val": 80,
+    "test_genuine": 80,
+    "test_tampered_per_type": 40
+  },
+  "download_detection_stats": {
+    "examined": 97,
+    "qr_found": 79,
+    "qr_decoded": 61,
+    "kept": 40,
+    "download_errors": 0,
+    "qr_found_rate": 0.8144329896907216,
+    "qr_decoded_rate": 0.6288659793814433
+  },
+  "by_mode": {
+    "mean": {
+      "simulated_shots": {
+        "false_positive_rate": 0.0,
+        "detection_rate": 0.7515923566878981,
+        "accuracy": 0.8347457627118644,
+        "auc_mean": 0.9590421672176087,
+        "auc_median": 0.9590421672176087,
+        "auc_min": 0.9590421672176087,
+        "posters_auc_ge_0.99": 0,
+        "detection_by_type": {
+          "aligned_overlay": 1.0,
+          "loose_overlay": 1.0,
+          "branded_sticker": 1.0,
+          "partial_patch": 0.0
+        }
+      }
+    },
+    "local": {
+      "simulated_shots": {
+        "false_positive_rate": 0.0,
+        "detection_rate": 0.9490445859872612,
+        "accuracy": 0.9661016949152542,
+        "auc_mean": 1.0,
+        "auc_median": 1.0,
+        "auc_min": 1.0,
+        "posters_auc_ge_0.99": 1,
+        "detection_by_type": {
+          "aligned_overlay": 0.975,
+          "loose_overlay": 0.9736842105263158,
+          "branded_sticker": 0.975,
+          "partial_patch": 0.8717948717948718
+        }
+      }
+    }
+  },
+  "original_photos": {
+    "genuine_pass_rate": 1.0,
+    "stickered_flag_rate": 1.0,
+    "stickered_flag_rate_by_type": {
+      "aligned_overlay": 1.0,
+      "loose_overlay": 1.0,
+      "branded_sticker": 1.0,
+      "partial_patch": 1.0
+    }
+  }
+}
