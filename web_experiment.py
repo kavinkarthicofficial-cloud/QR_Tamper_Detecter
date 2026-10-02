@@ -30,35 +30,13 @@ from sklearn.metrics import roc_auc_score
 from qrguard import config, synth
 from qrguard.calibration import calibrate
 from qrguard.detector import QRGuard, Result, _to_bgr_uint8, result_panel
+from qrguard.enrollment import _init, generate
 from qrguard.model import anomaly_score, pick_device, save_checkpoint
 from qrguard.preprocess import find_qr, preprocess
 from qrguard.training import fit
 
 OUT = config.RESULTS_DIR / "web"
 RAW = config.DATA_DIR / "web" / "raw"
-
-# ----------------------------------------------------------------- parallel sample generation
-_P = {}
-
-
-def _init(poster, box):
-    _P["poster"], _P["box"] = poster, box
-    cv2.setNumThreads(1)
-
-
-def _sample(args):
-    kind, seed = args
-    rng = random.Random(seed)
-    src = _P["poster"] if kind == "genuine" else synth.tamper(_P["poster"], kind, rng, _P["box"])
-    arr, *_ = preprocess(synth.simulate_photo(src, rng, out_size=640, qr_box=_P["box"]))
-    return arr
-
-
-def generate(pool, kind, n, seed0):
-    arrs = pool.map(_sample, [(kind, seed0 + i) for i in range(n)], chunksize=8)
-    ok = [a for a in arrs if a is not None]
-    return (np.stack(ok) if ok else np.zeros((0, 3, config.IMG_SIZE, config.IMG_SIZE), np.float32)), n - len(ok)
-
 
 # ----------------------------------------------------------------- scoring helpers
 class _Guard(QRGuard):
