@@ -130,6 +130,37 @@ Per-poster numbers are in `results/web/per_poster.csv` and `results/web/log.txt`
 > stuck on. The last step is a physical test: print a poster, take about 50 phone photos,
 > paste a printed sticker on it, and photograph it again (see "Using real photos").
 
+## Check your own QR code
+
+QRGuard compares a photo with what **that specific poster** looks like when genuine, so it
+cannot judge a QR it has never seen. You enrol a poster first, from one or more photos of its
+genuine state. That takes 1–3 minutes, and after it you can check any later photo of the poster:
+
+```bash
+python3 enroll.py genuine_poster.jpg --name canteen-upi       # one-time, 1–3 min
+python3 detect.py --poster canteen-upi todays_photo.jpg       # GENUINE or TAMPERED
+python3 detect.py --list                                      # posters it can check
+```
+
+In the web app (`python3 app.py`), choose the poster from the **Poster** list, or use
+**Enrol a new poster** to upload genuine photos from your phone. When training finishes, the new
+poster is selected automatically.
+
+Example with a real web photo the system had never seen (`data/web/raw/web_010.jpg`, enrolled
+in 72 s):
+
+| Photo checked | Verdict | Score / threshold |
+|---|---|---|
+| the genuine photo | GENUINE | 0.6× |
+| same photo with a pasted sticker | TAMPERED | 11× |
+| same photo with a small partial patch | TAMPERED | 11.6× |
+| a completely different QR code | TAMPERED | 14× |
+
+**Important:** enrol from photos you know are genuine, for example when the poster is first
+put up. If the enrolment photo already has a sticker on it, QRGuard learns the sticker as the
+genuine poster. A few photos at different angles and in different light make the model more
+robust than a single photo.
+
 ## Quick start
 
 ```bash
@@ -149,11 +180,12 @@ Tip: Python buffers its output when redirected to a file. To watch progress live
 | `python3 train.py` | Trains the autoencoder on genuine photos, calibrates thresholds, and saves `checkpoints/qrguard_ae.pt` |
 | `python3 evaluate.py` | Test-set metrics and figures in `results/` |
 | `python3 baseline_supervised.py` | Leave-one-attack-out supervised CNN comparison |
-| `python3 detect.py photo.jpg ...` | Checks photos from the CLI and writes annotated images to `results/detections/` (exit code 1 if anything is flagged) |
+| `python3 detect.py [--poster NAME] photo.jpg ...` | Checks photos from the CLI and writes annotated images to `results/detections/` (exit code 1 if anything is flagged) |
 | `python3 calibrate.py --genuine DIR` | Re-fits the threshold from a folder of genuine photos (no retraining) |
 | `python3 export_mobile.py` | TorchScript + PyTorch Mobile (`.ptl`) model and `qrguard_mobile.json` for on-device use |
 | `python3 app.py` | Phone-friendly web app (camera upload, verdict, reconstruction, error heatmap) |
 | `python3 -m pytest -q` | Smoke tests |
+| `python3 enroll.py photo.jpg --name NAME` | Enrols your own poster from genuine photo(s) so it can be checked |
 | `python3 fetch_web_qr.py` | Downloads real QR photos from Wikimedia Commons into `data/web/raw/` with attribution |
 | `python3 web_experiment.py` | Trains and tests one model per real photo (about 2–4 min per poster; resumable, skips finished posters) |
 
@@ -228,6 +260,7 @@ For a physical demo, print `poster_genuine.png`, photograph it, paste the printe
 qrguard/            config, preprocess, model, data loading, calibration, detector, synth
 generate_data.py    train.py    evaluate.py    baseline_supervised.py
 detect.py           calibrate.py    export_mobile.py    app.py    templates/index.html
+enroll.py           enrol your own poster (qrguard/enrollment.py)
 fetch_web_qr.py     web_experiment.py    ATTRIBUTION.md      (real web QR photos)
 tests/              smoke tests
 run_pipeline.sh     reproduces the synthetic results
