@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 import torch
 
-from .config import DEFAULT_CHECKPOINT
+from .config import CHECKPOINT_DIR, DEFAULT_CHECKPOINT
 from .model import anomaly_score, error_map, load_checkpoint, pick_device
 from .preprocess import preprocess
 
@@ -80,6 +80,21 @@ class QRGuard:
             recon=_to_bgr_uint8(torch.from_numpy(recons[0])), error=errs[0], corners=corners,
             heat_vmax=self.heat_vmax,
         )
+
+
+def available_posters() -> dict:
+    """Every poster QRGuard can check: name -> checkpoint path.
+
+    "demo-canteen" is the synthetic demo poster; enrol.py adds posters/<name>.pt;
+    web_experiment.py saves a few real web posters under web/.
+    """
+    out = {}
+    if DEFAULT_CHECKPOINT.exists():
+        out["demo-canteen"] = DEFAULT_CHECKPOINT
+    for sub in ("web", "posters"):                # enrolled posters win on a name clash
+        for p in sorted((CHECKPOINT_DIR / sub).glob("*.pt")):
+            out[p.stem] = p
+    return out
 
 
 # --------------------------------------------------------------------------- visualisation
