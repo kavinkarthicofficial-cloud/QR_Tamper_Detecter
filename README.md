@@ -163,11 +163,25 @@ robust than a single photo.
 
 ## Quick start
 
+The repo includes the trained demo model (`checkpoints/qrguard_ae.pt`, the model behind the
+synthetic results above) and the 40 real web photos (`data/web/raw/`). After cloning, you can
+check and enrol posters straight away:
+
 ```bash
 pip install -r requirements.txt
-./run_pipeline.sh            # data → train → evaluate → supervised baseline → mobile export (~15 min)
-python3 app.py               # web app on http://localhost:8000
+python3 app.py               # web app on http://localhost:8000 (no training needed)
+python3 detect.py --poster demo-canteen data/web/raw/web_000.jpg
 ```
+
+To reproduce everything from scratch, including the synthetic dataset (about 760 MB, not in
+the repo) and the app's one-click test photos:
+
+```bash
+./run_pipeline.sh            # data → train → evaluate → supervised baseline → mobile export (~15 min)
+```
+
+On Windows, use `python` instead of `python3`, and run the scripts listed in `run_pipeline.sh`
+one at a time.
 
 Tip: Python buffers its output when redirected to a file. To watch progress live, use
 `PYTHONUNBUFFERED=1 ./run_pipeline.sh`, or `python3 -u train.py` for a single step.
