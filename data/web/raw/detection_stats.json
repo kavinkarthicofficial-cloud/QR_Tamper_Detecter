@@ -1,0 +1,9 @@
+{
+  "examined": 97,
+  "qr_found": 79,
+  "qr_decoded": 61,
+  "kept": 40,
+  "download_errors": 0,
+  "qr_found_rate": 0.8144329896907216,
+  "qr_decoded_rate": 0.6288659793814433
+}
