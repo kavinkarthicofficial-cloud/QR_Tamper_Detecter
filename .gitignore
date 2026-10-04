@@ -2,6 +2,18 @@ __pycache__/
 *.pyc
 .DS_Store
 .pytest_cache/
-data/
-checkpoints/
+.qrguard_cache.npz
+
+# Generated data: rebuild with generate_data.py. The 40 real web photos are kept in the repo.
+data/*
+!data/web/
+data/web/*
+!data/web/raw/
+
+# Trained models: only the demo model (and its mobile metadata) is kept in the repo;
+# everything else is rebuilt by train.py / export_mobile.py / enroll.py.
+checkpoints/*
+!checkpoints/qrguard_ae.pt
+!checkpoints/qrguard_mobile.json
+
 results/detections/
