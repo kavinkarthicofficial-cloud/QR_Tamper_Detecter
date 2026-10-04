@@ -1,0 +1,149 @@
+{
+  "score_mode": "local",
+  "threshold_rule": "log-space mean + k\u03c3 of genuine validation scores, k=3.0",
+  "n_genuine": 200,
+  "n_tampered": 400,
+  "no_qr_found": {
+    "genuine": 0,
+    "tampered": 0
+  },
+  "threshold": 0.03869034249851031,
+  "roc_auc": 0.9999,
+  "accuracy": 0.9983333333333333,
+  "precision": 0.9975062344139651,
+  "recall_tpr": 1.0,
+  "f1": 0.9987515605493134,
+  "false_positive_rate": 0.005,
+  "confusion_matrix [[TN,FP],[FN,TP]]": [
+    [
+      199,
+      1
+    ],
+    [
+      0,
+      400
+    ]
+  ],
+  "mean_score": {
+    "genuine": 0.007300161756575108,
+    "tampered": 0.21994854509830475
+  },
+  "per_type": {
+    "aligned_overlay": {
+      "n": 100,
+      "detection_rate": 1.0,
+      "auc_vs_genuine": 0.99995,
+      "mean_score": 0.23552526533603668,
+      "min_score": 0.07239803671836853
+    },
+    "branded_sticker": {
+      "n": 100,
+      "detection_rate": 1.0,
+      "auc_vs_genuine": 1.0,
+      "mean_score": 0.22074812650680542,
+      "min_score": 0.07943809032440186
+    },
+    "loose_overlay": {
+      "n": 100,
+      "detection_rate": 1.0,
+      "auc_vs_genuine": 1.0,
+      "mean_score": 0.21460455656051636,
+      "min_score": 0.08385379612445831
+    },
+    "partial_patch": {
+      "n": 100,
+      "detection_rate": 1.0,
+      "auc_vs_genuine": 0.99965,
+      "mean_score": 0.20891614258289337,
+      "min_score": 0.04495817422866821
+    }
+  },
+  "comparison_by_score_mode": {
+    "mean": {
+      "threshold": 0.007342064435443206,
+      "roc_auc": 0.9980125,
+      "accuracy": 0.97,
+      "precision": 0.9973958333333334,
+      "recall_tpr": 0.9575,
+      "f1": 0.9770408163265306,
+      "false_positive_rate": 0.005,
+      "mean_score": {
+        "genuine": 0.0025738882832229137,
+        "tampered": 0.06732530146837234
+      },
+      "per_type": {
+        "aligned_overlay": {
+          "n": 100,
+          "detection_rate": 1.0,
+          "auc_vs_genuine": 1.0,
+          "mean_score": 0.0701136440038681,
+          "min_score": 0.013744164258241653
+        },
+        "branded_sticker": {
+          "n": 100,
+          "detection_rate": 1.0,
+          "auc_vs_genuine": 1.0,
+          "mean_score": 0.08347281813621521,
+          "min_score": 0.01938331127166748
+        },
+        "loose_overlay": {
+          "n": 100,
+          "detection_rate": 1.0,
+          "auc_vs_genuine": 1.0,
+          "mean_score": 0.10323898494243622,
+          "min_score": 0.02737046778202057
+        },
+        "partial_patch": {
+          "n": 100,
+          "detection_rate": 0.83,
+          "auc_vs_genuine": 0.99205,
+          "mean_score": 0.012475772760808468,
+          "min_score": 0.0031277923844754696
+        }
+      }
+    },
+    "local": {
+      "threshold": 0.03869034249851031,
+      "roc_auc": 0.9999,
+      "accuracy": 0.9983333333333333,
+      "precision": 0.9975062344139651,
+      "recall_tpr": 1.0,
+      "f1": 0.9987515605493134,
+      "false_positive_rate": 0.005,
+      "mean_score": {
+        "genuine": 0.007300161756575108,
+        "tampered": 0.21994854509830475
+      },
+      "per_type": {
+        "aligned_overlay": {
+          "n": 100,
+          "detection_rate": 1.0,
+          "auc_vs_genuine": 0.99995,
+          "mean_score": 0.23552526533603668,
+          "min_score": 0.07239803671836853
+        },
+        "branded_sticker": {
+          "n": 100,
+          "detection_rate": 1.0,
+          "auc_vs_genuine": 1.0,
+          "mean_score": 0.22074812650680542,
+          "min_score": 0.07943809032440186
+        },
+        "loose_overlay": {
+          "n": 100,
+          "detection_rate": 1.0,
+          "auc_vs_genuine": 1.0,
+          "mean_score": 0.21460455656051636,
+          "min_score": 0.08385379612445831
+        },
+        "partial_patch": {
+          "n": 100,
+          "detection_rate": 1.0,
+          "auc_vs_genuine": 0.99965,
+          "mean_score": 0.20891614258289337,
+          "min_score": 0.04495817422866821
+        }
+      }
+    }
+  }
+}
