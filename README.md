@@ -170,7 +170,8 @@ check and enrol posters straight away:
 ```bash
 pip install -r requirements.txt
 python3 app.py               # web app on http://localhost:8000 (no training needed)
-python3 detect.py --poster demo-canteen data/web/raw/web_000.jpg
+python3 enroll.py data/web/raw/web_010.jpg --name bayern-sign     # enrol a real poster (~1-2 min)
+python3 detect.py --poster bayern-sign data/web/raw/web_010.jpg   # -> GENUINE
 ```
 
 To reproduce everything from scratch, including the synthetic dataset (about 760 MB, not in
