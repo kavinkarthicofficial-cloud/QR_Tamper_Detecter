@@ -26,6 +26,14 @@ generated independently of the training data, and the QR was located in every on
 
 Confusion matrix (local score): TN 197, FP 3, FN 0, TP 400.
 
+**Fresh test set.** The score type and threshold rule were chosen during development, while
+looking at results from the same generator. To check that this did not inflate the numbers,
+600 new test photos were generated with a different seed (2026), which nothing in the project
+had seen before, and the same model was evaluated unchanged
+(`generate_data.py --name synthetic_fresh --seed 2026 --train 0 --val 0`). Result with the
+`local` score: AUC 0.9999, accuracy 99.8%, recall 100%, and 1 false positive out of 200 (0.5%).
+With the `mean` score, partial-patch detection was 83%. Figures are in `results/fresh_test/`.
+
 Detection rate per attack type:
 
 | Attack | What the attacker does | `mean` | `local` |
