@@ -1,0 +1,14 @@
+{
+  "threshold": 0.03869034249851031,
+  "score_mode": "local",
+  "local_window": 16,
+  "input_size": 128,
+  "channels": "RGB",
+  "value_range": [
+    0,
+    1
+  ],
+  "qr_margin": 0.25,
+  "preprocess": "detect QR corners (TL,TR,BR,BL); perspective-warp so the QR spans the centre 1/(1+2*0.25) of a 128x128 patch",
+  "decision": "tampered if score > threshold"
+}
