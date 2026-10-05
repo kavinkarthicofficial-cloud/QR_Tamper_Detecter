@@ -37,7 +37,15 @@
   .verdict { border-radius: 12px; padding: 16px 18px; display: flex; gap: 14px; align-items: center; }
   .verdict.genuine { background: var(--ok-bg); color: var(--ok); }
   .verdict.tampered { background: var(--bad-bg); color: var(--bad); }
-  .verdict.no_qr { background: var(--warn-bg); color: var(--warn); }
+  .verdict.no_qr, .verdict.unverified { background: var(--warn-bg); color: var(--warn); }
+  .reasons { margin: 12px 0 0; padding-left: 20px; font-size: 14px; }
+  .invest { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 16px; }
+  .invest .ihead { font-weight: 700; margin-top: 4px; }
+  .invest p, .invest ul { font-size: 14px; margin: 8px 0 0; }
+  .badge { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; margin-left: 6px; }
+  .cam video { width: 100%; max-width: 520px; border-radius: 10px; background: #000; display: block; margin-bottom: 10px; }
+  .topnav { margin-top: 8px; font-size: 14px; }
+  .topnav a { color: var(--accent); }
   .verdict .big { font-size: 24px; font-weight: 800; letter-spacing: 0.02em; }
   .verdict .sub { color: var(--ink); opacity: 0.85; font-size: 14px; }
   .meter { position: relative; height: 10px; border-radius: 6px; background: var(--line); margin: 18px 0 6px; }
@@ -70,6 +78,7 @@
   <header>
     <h1>QR<span>Guard</span></h1>
     <p>Check a QR poster for a pasted-over sticker <em>before</em> you scan it.</p>
+    <p class="topnav"><a href="results">Accuracy and results &rarr;</a></p>
   </header>
 
   <section class="card">
@@ -86,6 +95,12 @@
       <div style="margin-top:14px"><span class="btn">Open camera / choose photo</span></div>
     </label>
     <input id="file" type="file" accept="image/*" capture="environment" hidden>
+    <div class="row" style="margin-top:12px"><button class="btn secondary" id="camBtn" type="button" hidden>Use laptop webcam</button></div>
+    <div id="camBox" class="cam" hidden>
+      <video id="camVideo" autoplay playsinline muted></video>
+      <div class="row"><button class="btn" id="camShot" type="button">Take photo</button>
+        <button class="btn secondary" id="camStop" type="button">Cancel</button></div>
+    </div>
     {% if samples %}
     <div class="hint">Or try a test photo of the demo poster:</div>
     <div class="chips">
@@ -115,6 +130,7 @@
         <div class="sub" id="vsub"></div>
       </div>
     </div>
+    <ul class="reasons" id="reasons"></ul>
     <div id="meterbox">
       <div class="meter"><div class="fill" id="fill"></div><div class="thr" id="thr"></div></div>
       <div class="meter-labels"><span>0</span><span>threshold</span><span id="mmax"></span></div>
@@ -134,6 +150,14 @@
           <dt>Latency</dt><dd id="latency"></dd>
         </dl>
       </div>
+    </div>
+    <div class="invest" id="invest" hidden>
+      <div><strong>Investigator</strong><span class="badge" id="ibadge"></span></div>
+      <div class="ihead" id="ihead"></div>
+      <p id="iexpl"></p>
+      <ul id="ipoints"></ul>
+      <p><strong>What to do:</strong> <span id="iadvice"></span></p>
+      <p class="hint" id="inote"></p>
     </div>
     <p class="hint">The autoencoder was trained only on photos of the genuine poster. Anything it cannot
       reconstruct (a different QR pattern, sticker edges, shadows) raises the error; bright areas in the heatmap
@@ -169,10 +193,11 @@ function show(d) {
   $('result').hidden = false;
   const v = $('verdict');
   v.className = 'verdict ' + d.status;
-  const titles = { genuine: 'Looks genuine', tampered: 'Possible tampering', no_qr: 'No QR code found' };
+  const titles = { genuine: 'Looks genuine', tampered: 'Possible tampering', unverified: 'Unable to verify: retake the photo', no_qr: 'No QR code found' };
   const subs = {
     genuine: 'The poster matches what QRGuard learned. Still check the payee name in your UPI app.',
     tampered: 'This QR region does not match the genuine poster. A sticker may have been pasted over it — do not pay.',
+    unverified: 'The photo is too different from the enrolment photos to judge fairly. Retake it; if it keeps failing, do not trust the poster.',
     no_qr: 'Retake the photo closer and straighter, with the full QR code visible.'
   };
   $('vtitle').textContent = titles[d.status];
@@ -186,7 +211,7 @@ function show(d) {
     const max = d.threshold * 4;
     const pct = Math.min(d.score / max, 1) * 100;
     $('fill').style.width = pct + '%';
-    $('fill').style.background = d.status === 'tampered' ? 'var(--bad)' : 'var(--ok)';
+    $('fill').style.background = d.status === 'tampered' ? 'var(--bad)' : d.status === 'unverified' ? 'var(--warn)' : 'var(--ok)';
     $('thr').style.left = '25%';
     $('mmax').textContent = '4× threshold';
     $('score').textContent = d.score.toFixed(5) + '  (' + d.score_over_threshold.toFixed(2) + '× threshold)';
@@ -194,7 +219,33 @@ function show(d) {
   $('threshold').textContent = d.threshold.toFixed(5);
   $('payload').textContent = d.payload || (has ? '(not decodable)' : '—');
   $('latency').textContent = d.latency_ms + ' ms';
+  const ul = $('reasons'); ul.innerHTML = '';
+  (d.reasons || []).forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
   $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (d.evidence_id) explain(d.evidence_id);
+}
+
+// The Investigator agent explains the result in plain language. It cannot change the verdict.
+async function explain(id) {
+  $('invest').hidden = false;
+  $('ihead').textContent = 'The Investigator is checking the evidence…';
+  ['iexpl', 'iadvice', 'inote', 'ibadge'].forEach(k => $(k).textContent = '');
+  $('ipoints').innerHTML = '';
+  try {
+    const r = await fetch('explain', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ evidence_id: id }) });
+    const j = await r.json();
+    if (j.error) throw new Error(j.error);
+    const a = j.answer;
+    $('ihead').textContent = a.headline;
+    $('iexpl').textContent = a.explanation;
+    (a.evidence_points || []).forEach(t => { const li = document.createElement('li'); li.textContent = t; $('ipoints').appendChild(li); });
+    $('iadvice').textContent = a.advice;
+    $('ibadge').textContent = j.backend_used === 'template' ? 'built-in explanation' : 'AI: ' + j.backend_used;
+    const used = (j.tool_trace || []).map(t => t.tool).join(', ');
+    $('inote').textContent = (used ? 'Tools used: ' + used + '. ' : '') + (j.fallback_reason ? 'AI unavailable (' + j.fallback_reason.slice(0, 220) + '), used the built-in explanation. ' : '') + 'The verdict above was decided by the detector, not by this text.';
+  } catch (e) {
+    $('invest').hidden = true;
+  }
 }
 
 file.addEventListener('change', () => file.files[0] && upload(file.files[0]));
@@ -206,6 +257,23 @@ document.querySelectorAll('.chip').forEach(b =>
     $('poster').value = 'demo-canteen';
     run(fetch('sample?path=' + encodeURIComponent(b.dataset.path)));
   }));
+
+// Laptop webcam (needs a secure context: works on localhost; phones use the file input's camera instead)
+let camStream = null;
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) $('camBtn').hidden = false;
+function stopCam() { if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; } $('camBox').hidden = true; }
+$('camBtn').addEventListener('click', async () => {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 } } });
+    $('camVideo').srcObject = camStream; $('camBox').hidden = false;
+  } catch (e) { alert('Could not open the camera: ' + e.message); }
+});
+$('camStop').addEventListener('click', stopCam);
+$('camShot').addEventListener('click', () => {
+  const v = $('camVideo'), c = document.createElement('canvas');
+  c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v, 0, 0);
+  c.toBlob(b => { stopCam(); upload(new File([b], 'webcam.jpg', { type: 'image/jpeg' })); }, 'image/jpeg', 0.92);
+});
 
 $('enrollForm').addEventListener('submit', async ev => {
   ev.preventDefault();
