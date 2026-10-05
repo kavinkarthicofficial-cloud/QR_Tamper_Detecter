@@ -243,9 +243,14 @@ def simulate_photo(poster: np.ndarray, rng: random.Random, out_size: int = 900, 
 
 # --------------------------------------------------------------------------- real posters
 
-def rectify_real_photo(photo: np.ndarray, corners: np.ndarray, qr_side: int = 300, context: float = 0.55):
+def rectify_real_photo(photo: np.ndarray, corners: np.ndarray, qr_side: int = 300, context: float = 0.55,
+                       fill: bool = False):
     """Turn a real photo into a flat 'poster': the QR becomes an axis-aligned qr_side square
     centred in a canvas with `context` x qr_side of real surroundings on each side.
+
+    Where the canvas extends past the photo, the default mirrors the photo. With fill=True it
+    uses the photo's median border colour instead: a tightly cropped QR (e.g. a screenshot)
+    would otherwise be surrounded by mirrored copies of itself.
 
     Returns (poster, qr_box, H) where qr_box covers the QR plus its quiet zone and H maps
     photo pixels -> poster pixels.
@@ -254,7 +259,14 @@ def rectify_real_photo(photo: np.ndarray, corners: np.ndarray, qr_side: int = 30
     size = qr_side + 2 * m
     dst = np.array([[m, m], [m + qr_side, m], [m + qr_side, m + qr_side], [m, m + qr_side]], np.float32)
     H = cv2.getPerspectiveTransform(corners.astype(np.float32), dst)
-    poster = cv2.warpPerspective(photo, H, (size, size), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REFLECT)
+    if fill:
+        ring = np.concatenate([photo[:2].reshape(-1, 3), photo[-2:].reshape(-1, 3),
+                               photo[:, :2].reshape(-1, 3), photo[:, -2:].reshape(-1, 3)])
+        colour = tuple(int(v) for v in np.median(ring, axis=0))
+        poster = cv2.warpPerspective(photo, H, (size, size), flags=cv2.INTER_CUBIC,
+                                     borderMode=cv2.BORDER_CONSTANT, borderValue=colour)
+    else:
+        poster = cv2.warpPerspective(photo, H, (size, size), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REFLECT)
     e = int(round(qr_side * 0.07))
     return poster, (m - e, m - e, m + qr_side + e, m + qr_side + e), H
 
