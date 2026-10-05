@@ -15,5 +15,6 @@ data/web/*
 checkpoints/*
 !checkpoints/qrguard_ae.pt
 !checkpoints/qrguard_mobile.json
+!checkpoints/qrguard_ae.meta.json
 
 results/detections/
