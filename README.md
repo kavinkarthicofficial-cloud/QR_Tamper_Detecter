@@ -209,6 +209,10 @@ Tip: Python buffers its output when redirected to a file. To watch progress live
 | `python3 app.py` | Phone-friendly web app (camera upload, verdict, reconstruction, error heatmap) |
 | `python3 -m pytest -q` | Smoke tests |
 | `python3 enroll.py photo.jpg --name NAME` | Enrols your own poster from genuine photo(s) so it can be checked |
+| `python robustness.py` | Degrades genuine and tampered test photos (dark, bright, blur, JPEG, noise, rotation, resize) and reports false alarms, retakes and misses with and without the quality gate |
+| `python make_gallery.py` | Draws `results/attacks_gallery.png`: genuine poster and each attack, with reconstruction and error heatmap |
+| `python agent_eval.py [--backend gemini]` | Tests the Investigator agent on canned cases, including prompt injection |
+| `python make_meta.py` | Writes the photo-quality range and enrolled QR text next to a checkpoint (already done for the demo model) |
 | `python3 fetch_web_qr.py` | Downloads real QR photos from Wikimedia Commons into `data/web/raw/` with attribution |
 | `python3 web_experiment.py` | Trains and tests one model per real photo (about 2–4 min per poster; resumable, skips finished posters) |
 
@@ -289,6 +293,61 @@ tests/              smoke tests
 run_pipeline.sh     reproduces the synthetic results
 ```
 
+## Decision rules, photo-quality gate, Investigator agent and results page
+
+**Decision rule** (`QRGuard.analyze`). The autoencoder decides. Two deterministic checks surround it, and neither can create
+a GENUINE verdict:
+
+| Situation | Verdict |
+|---|---|
+| Decoded QR text differs from the text recorded when the poster was enrolled | **TAMPERED** |
+| Autoencoder error above the threshold, photo quality normal | **TAMPERED** |
+| Autoencoder error above the threshold, photo much blurrier / darker / brighter than the enrolment photos | **RETAKE** ("unverified"), not a false alarm |
+| Autoencoder error below the threshold | **GENUINE** (with a warning if the photo quality is unusual) |
+| No QR found | **NO QR**: retake, and treat a covered or damaged code as suspicious |
+
+`qrguard/quality.py` measures brightness, contrast, sharpness and blown-out pixels on the aligned patch and compares them with
+the range seen at enrolment. `python robustness.py` measures what the gate does: on the demo poster it catches a third of the
+false alarms caused by bad photos, on a real-photo poster 84%, and it never turns a tampered photo into "genuine"; the cost is
+that a small share of tampered photos taken under bad conditions become "retake" (1.4% and 7.0%; see `results/robustness*.json`).
+
+**Investigator agent** (`qrguard/agent.py`, panel under the verdict). A small tool-using agent turns the evidence into a short
+plain-language explanation and advice. Its design:
+
+* It can **never change the verdict**: an answer that contradicts the detector, calls a non-genuine result safe, or forgets to
+  ask for a retake is rejected, retried once, then replaced by the built-in template.
+* It states only facts it fetched with four tools (`get_visual_evidence`, `get_hot_region`, `get_photo_quality`,
+  `compare_payload`).
+* Text read from the QR code is attacker-controlled, so it is sanitised, passed inside `<untrusted_qr_text>` tags, and the system
+  prompt says never to follow instructions found there. `agent_eval.py` includes three prompt-injection cases.
+* No key, no internet, a rate limit or a malformed answer all fall back to a deterministic template, so the demo never breaks.
+
+To use the AI model, make a free key in Google AI Studio (no card; keep billing off for that project) and set it in your own
+environment. Never paste the key into chat or commit it:
+
+```bash
+$env:GEMINI_API_KEY="your-key-here"          # PowerShell (the key lasts until you close that window)
+```
+
+```bash
+set GEMINI_API_KEY=your-key-here             # Windows cmd.exe
+export GEMINI_API_KEY=your-key-here          # macOS / Linux / Git Bash
+```
+
+```bash
+python agent_eval.py --backend both
+```
+
+`agent_eval.py` runs 16 canned cases (stickers, look-alike links, blurry photos, no QR, injection attempts) and writes
+`results/agent_eval.json`. Without a key it tests the template backend only. The Gemini request code was tested with a faked
+API (`tests/test_phase2.py`); a real call needs your key. The model defaults to the newest Gemini "flash" model your key can use
+(override with `QRGUARD_GEMINI_MODEL`); free-tier limits and model names change, so check AI Studio.
+
+**Results page** (`http://localhost:8000/results`) shows the accuracy tables and figures straight from `results/`, so the demo
+can show the metrics without leaving the app. **Dataset card:** [DATASET.md](DATASET.md). **Threat model and related work:**
+[docs/THREAT_MODEL.md](docs/THREAT_MODEL.md). The laptop webcam button on the main page needs a secure context (it works on
+`localhost`); phones use the camera through the upload button.
+
 ## Limitations
 
 - **One model per poster design.** That is the point of one-class training, but each new
@@ -300,6 +359,8 @@ run_pipeline.sh     reproduces the synthetic results
 - **The QR must be found.** If a sticker makes the code undetectable, the app reports
   "No QR code found" instead of a verdict. An unscannable code is itself suspicious on a
   payment poster.
+- **The Investigator's AI text needs a free Gemini key and internet**; otherwise the built-in template explains the result. It never decides the verdict.
+- **The quality gate trades a few misses for fewer false alarms:** a small share of tampered photos taken in poor conditions become "retake" (never "genuine"). See `results/robustness*.json`.
 - **Extreme lighting causes the remaining false positives** (very dark photos, or strong
   yellow or blue casts). Real-photo calibration and more lighting variety in training would
   reduce them.
