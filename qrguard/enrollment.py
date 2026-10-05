@@ -47,7 +47,7 @@ def generate(pool, kind, n, seed0):
 
 
 def simulated_shots(photo, corners, n, seed, workers=8):
-    poster, box, _ = synth.rectify_real_photo(photo, corners)
+    poster, box, _ = synth.rectify_real_photo(photo, corners, fill=True)
     with mp.Pool(workers, initializer=_init, initargs=(poster, box)) as pool:
         X, _ = generate(pool, "genuine", n, seed)
     return X
@@ -58,7 +58,7 @@ def enroll(photos: list[np.ndarray], n_train: int = 300, n_val: int = 80, epochs
            min_epochs: int = 40, seed: int = 0, verbose: bool = False):
     """Train a poster-specific model from genuine photos.
 
-    Returns (model, thresholds, stats). The real photos themselves are added to the
+    Returns (model, thresholds, stats). The real photos themselves make up about 10% of the
     training set; the simulated shots are split evenly across the photos.
     """
     usable = []
@@ -74,7 +74,10 @@ def enroll(photos: list[np.ndarray], n_train: int = 300, n_val: int = 80, epochs
     for i, (p, corners, _) in enumerate(usable):
         Xtr.append(simulated_shots(p, corners, per_tr, seed + 1_000_000 * i))
         Xva.append(simulated_shots(p, corners, per_va, seed + 1_000_000 * i + 500_000))
-        Xtr.append(to_tensor_array(warp_qr_region(p, corners))[None])     # the real photo itself
+        # The real photo itself is the most trustworthy genuine sample, so it makes up about
+        # 10% of the training set (training augmentation adds shifts and lighting changes).
+        real = to_tensor_array(warp_qr_region(p, corners))[None]
+        Xtr.append(np.repeat(real, max(1, per_tr // 10), axis=0))
     Xtr, Xva = np.concatenate(Xtr), np.concatenate(Xva)
 
     device = pick_device()
