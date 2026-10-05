@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 import torch
 
-from . import config, synth
+from . import config, quality, synth
 from .calibration import calibrate
 from .model import pick_device
 from .preprocess import find_qr, preprocess, to_tensor_array, warp_qr_region
@@ -83,5 +83,6 @@ def enroll(photos: list[np.ndarray], n_train: int = 300, n_val: int = 80, epochs
     model, hist = fit(Xtr, Xva, device, epochs=epochs, patience=10, min_epochs=min_epochs, verbose=verbose)
     thresholds, stats = calibrate(model, Xva, device, config.K_SIGMA)
     stats.update({"n_train": int(len(Xtr)), "epochs_run": len(hist["train"]), "n_photos": len(usable),
-                  "payloads": sorted({u[2] for u in usable if u[2]})})
+                  "payloads": sorted({u[2] for u in usable if u[2]}),
+                  "quality": quality.reference_ranges(Xtr)})      # capture conditions seen at enrolment
     return model, thresholds, stats
