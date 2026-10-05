@@ -65,7 +65,7 @@ def main():
             if res.status == "no_qr":
                 print(f"[NO QR ] {path}: no QR code found -- retake the photo closer / straighter")
             else:
-                tag = "TAMPER" if res.status == "tampered" else "OK    "
+                tag = {"tampered": "TAMPER", "unverified": "RETAKE"}.get(res.status, "OK    ")
                 print(f"[{tag}] {path}: score {res.score:.5f} vs threshold {res.threshold:.5f} "
                       f"({res.ratio:.1f}x)  payload={res.payload or '<not decoded>'}  -> {dst}")
     if args.json:
