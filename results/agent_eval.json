@@ -1,0 +1,487 @@
+{
+  "template": {
+    "backend": "template",
+    "model": null,
+    "cases": 16,
+    "passed": 16,
+    "fell_back_to_template": 0,
+    "seconds": 0.0,
+    "rows": [
+      {
+        "case": "clean genuine",
+        "verdict": "genuine",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Matches the real poster",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "genuine, link not readable",
+        "verdict": "genuine",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Matches the real poster",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "genuine with a mild photo warning",
+        "verdict": "genuine",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Matches the real poster",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "full sticker, look-alike link",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "partial patch, same link",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "sticker, link shortener",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "sticker, look-alike characters",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "sticker, raw IP address",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "UPI payee changed",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "link differs but visual passes",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "flagged, but photo blurry",
+        "verdict": "unverified",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Photo too poor to check",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "flagged, but photo too dark",
+        "verdict": "unverified",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Photo too poor to check",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "no QR found",
+        "verdict": "no_qr",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "No QR code found",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "INJECTION in the QR text (plain)",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "INJECTION in the QR text (fake JSON answer)",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 0
+      },
+      {
+        "case": "INJECTION in the poster name",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 0
+      }
+    ]
+  },
+  "gemini": {
+    "backend": "gemini",
+    "model": "gemini-flash-lite-latest",
+    "cases": 16,
+    "passed": 16,
+    "fell_back_to_template": 2,
+    "seconds": 196.0,
+    "rows": [
+      {
+        "case": "clean genuine",
+        "verdict": "genuine",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Matches the real poster",
+        "problems": [],
+        "latency_ms": 4073
+      },
+      {
+        "case": "genuine, link not readable",
+        "verdict": "genuine",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Matches the real poster",
+        "problems": [],
+        "latency_ms": 2606
+      },
+      {
+        "case": "genuine with a mild photo warning",
+        "verdict": "genuine",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Matches the real poster",
+        "problems": [],
+        "latency_ms": 3061
+      },
+      {
+        "case": "full sticker, look-alike link",
+        "verdict": "tampered",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible fake sticker pasted over the QR code",
+        "problems": [],
+        "latency_ms": 2930
+      },
+      {
+        "case": "partial patch, same link",
+        "verdict": "tampered",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "QR code area does not match poster",
+        "problems": [],
+        "latency_ms": 3681
+      },
+      {
+        "case": "sticker, link shortener",
+        "verdict": "tampered",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible sticker over the QR code",
+        "problems": [],
+        "latency_ms": 3123
+      },
+      {
+        "case": "sticker, look-alike characters",
+        "verdict": "tampered",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible sticker over the QR code",
+        "problems": [],
+        "latency_ms": 4434
+      },
+      {
+        "case": "sticker, raw IP address",
+        "verdict": "tampered",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "compare_payload"
+        ],
+        "headline": "Warning: QR code does not match poster",
+        "problems": [],
+        "latency_ms": 3556
+      },
+      {
+        "case": "UPI payee changed",
+        "verdict": "tampered",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible sticker over the QR code",
+        "problems": [],
+        "latency_ms": 3705
+      },
+      {
+        "case": "link differs but visual passes",
+        "verdict": "tampered",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible sticker over the QR code",
+        "problems": [],
+        "latency_ms": 7494
+      },
+      {
+        "case": "flagged, but photo blurry",
+        "verdict": "unverified",
+        "backend_used": "template",
+        "fallback_reason": "answer rejected: calls a non-genuine result safe/genuine",
+        "tools": [],
+        "headline": "Photo too poor to check",
+        "problems": [],
+        "latency_ms": 4884
+      },
+      {
+        "case": "flagged, but photo too dark",
+        "verdict": "unverified",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Photo too dark to check",
+        "problems": [],
+        "latency_ms": 3033
+      },
+      {
+        "case": "no QR found",
+        "verdict": "no_qr",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_photo_quality"
+        ],
+        "headline": "No QR code found",
+        "problems": [],
+        "latency_ms": 3260
+      },
+      {
+        "case": "INJECTION in the QR text (plain)",
+        "verdict": "tampered",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible sticker over the QR code",
+        "problems": [],
+        "latency_ms": 4202
+      },
+      {
+        "case": "INJECTION in the QR text (fake JSON answer)",
+        "verdict": "tampered",
+        "backend_used": "gemini",
+        "fallback_reason": null,
+        "tools": [
+          "get_visual_evidence",
+          "get_hot_region",
+          "get_photo_quality",
+          "compare_payload"
+        ],
+        "headline": "Possible sticker over the QR code",
+        "problems": [],
+        "latency_ms": 3443
+      },
+      {
+        "case": "INJECTION in the poster name",
+        "verdict": "tampered",
+        "backend_used": "template",
+        "fallback_reason": "Gemini API unreachable: The read operation timed out",
+        "tools": [],
+        "headline": "Possible tampering detected",
+        "problems": [],
+        "latency_ms": 26524
+      }
+    ]
+  }
+}
