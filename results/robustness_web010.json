@@ -1,0 +1,161 @@
+{
+  "checkpoint": "checkpoints/posters/bayern-sign.pt",
+  "n_per_condition": 60,
+  "margin_used": 0.25,
+  "genuine": {
+    "clean": {
+      "found": 60,
+      "no_qr": 0,
+      "genuine": 60,
+      "tampered": 0,
+      "unverified": 0,
+      "false_alarm_without_gate": 0
+    },
+    "darker x0.6": {
+      "found": 60,
+      "no_qr": 0,
+      "genuine": 57,
+      "tampered": 0,
+      "unverified": 3,
+      "false_alarm_without_gate": 3
+    },
+    "brighter x1.4": {
+      "found": 60,
+      "no_qr": 0,
+      "genuine": 55,
+      "tampered": 0,
+      "unverified": 5,
+      "false_alarm_without_gate": 5
+    },
+    "blur sigma 1.5": {
+      "found": 60,
+      "no_qr": 0,
+      "genuine": 60,
+      "tampered": 0,
+      "unverified": 0,
+      "false_alarm_without_gate": 0
+    },
+    "blur sigma 2.5": {
+      "found": 60,
+      "no_qr": 0,
+      "genuine": 60,
+      "tampered": 0,
+      "unverified": 0,
+      "false_alarm_without_gate": 0
+    },
+    "blur sigma 4": {
+      "found": 60,
+      "no_qr": 0,
+      "genuine": 40,
+      "tampered": 1,
+      "unverified": 19,
+      "false_alarm_without_gate": 20
+    },
+    "JPEG quality 20": {
+      "found": 60,
+      "no_qr": 0,
+      "genuine": 59,
+      "tampered": 1,
+      "unverified": 0,
+      "false_alarm_without_gate": 1
+    },
+    "noise sd 16": {
+      "found": 60,
+      "no_qr": 0,
+      "genuine": 59,
+      "tampered": 1,
+      "unverified": 0,
+      "false_alarm_without_gate": 1
+    },
+    "rotated 12 deg": {
+      "found": 60,
+      "no_qr": 0,
+      "genuine": 59,
+      "tampered": 1,
+      "unverified": 0,
+      "false_alarm_without_gate": 1
+    },
+    "resized to 40%": {
+      "found": 60,
+      "no_qr": 0,
+      "genuine": 59,
+      "tampered": 1,
+      "unverified": 0,
+      "false_alarm_without_gate": 1
+    }
+  },
+  "tampered": {
+    "clean": {
+      "found": 60,
+      "no_qr": 0,
+      "tampered": 60,
+      "missed_as_genuine": 0,
+      "unverified": 0
+    },
+    "darker x0.6": {
+      "found": 60,
+      "no_qr": 0,
+      "tampered": 55,
+      "missed_as_genuine": 0,
+      "unverified": 5
+    },
+    "brighter x1.4": {
+      "found": 60,
+      "no_qr": 0,
+      "tampered": 50,
+      "missed_as_genuine": 0,
+      "unverified": 10
+    },
+    "blur sigma 2.5": {
+      "found": 60,
+      "no_qr": 0,
+      "tampered": 55,
+      "missed_as_genuine": 0,
+      "unverified": 5
+    },
+    "JPEG quality 20": {
+      "found": 60,
+      "no_qr": 0,
+      "tampered": 59,
+      "missed_as_genuine": 0,
+      "unverified": 1
+    }
+  },
+  "margin_sweep": {
+    "0.0": {
+      "genuine_false_alarm_caught": 28,
+      "genuine_false_alarm_total": 32,
+      "tampered_downgraded": 0.173,
+      "tampered_total": 300,
+      "false_alarms_caught": 0.875
+    },
+    "0.1": {
+      "genuine_false_alarm_caught": 28,
+      "genuine_false_alarm_total": 32,
+      "tampered_downgraded": 0.137,
+      "tampered_total": 300,
+      "false_alarms_caught": 0.875
+    },
+    "0.25": {
+      "genuine_false_alarm_caught": 27,
+      "genuine_false_alarm_total": 32,
+      "tampered_downgraded": 0.07,
+      "tampered_total": 300,
+      "false_alarms_caught": 0.844
+    },
+    "0.5": {
+      "genuine_false_alarm_caught": 6,
+      "genuine_false_alarm_total": 32,
+      "tampered_downgraded": 0.043,
+      "tampered_total": 300,
+      "false_alarms_caught": 0.188
+    },
+    "1.0": {
+      "genuine_false_alarm_caught": 6,
+      "genuine_false_alarm_total": 32,
+      "tampered_downgraded": 0.037,
+      "tampered_total": 300,
+      "false_alarms_caught": 0.188
+    }
+  }
+}
