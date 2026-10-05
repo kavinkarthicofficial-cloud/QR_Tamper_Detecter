@@ -17,3 +17,6 @@ checkpoints/*
 !checkpoints/qrguard_mobile.json
 
 results/detections/
+
+# Local demo images (personal screenshots / test copies)
+demo/
