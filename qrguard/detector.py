@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
 
 import cv2
 import numpy as np
 import torch
 
+from . import quality
 from .config import CHECKPOINT_DIR, DEFAULT_CHECKPOINT
+from .evidence import hot_region
 from .model import anomaly_score, error_map, load_checkpoint, pick_device
 from .preprocess import preprocess
 
@@ -17,7 +21,7 @@ HEAT_SCALE = 12.0   # a pixel error of HEAT_SCALE x the global-MSE threshold is 
 
 @dataclass
 class Result:
-    status: str                      # "genuine" | "tampered" | "no_qr"
+    status: str                      # "genuine" | "tampered" | "unverified" (retake the photo) | "no_qr"
     score: float | None = None
     threshold: float | None = None
     payload: str = ""
@@ -26,6 +30,12 @@ class Result:
     error: np.ndarray | None = None  # float32 HxW pixel-wise MSE
     corners: np.ndarray | None = None
     heat_vmax: float | None = None   # colour scale of the error heatmap
+    quality: dict | None = None      # photo-quality statistics of the aligned patch
+    quality_issues: list = field(default_factory=list)
+    expected_payloads: list = field(default_factory=list)   # decoded QR text(s) recorded when the poster was enrolled
+    payload_match: bool | None = None                        # decoded text vs enrolled text (None = cannot compare)
+    hot: dict | None = None                                  # where the error is high (see evidence.hot_region)
+    reasons: list = field(default_factory=list)              # plain-language reasons behind the status
 
     @property
     def ratio(self) -> float | None:
@@ -33,7 +43,8 @@ class Result:
 
     def summary(self) -> dict:
         return {"status": self.status, "score": self.score, "threshold": self.threshold,
-                "score_over_threshold": self.ratio, "payload": self.payload}
+                "score_over_threshold": self.ratio, "payload": self.payload, "payload_match": self.payload_match,
+                "quality_issues": self.quality_issues, "reasons": self.reasons, "hot_region": self.hot}
 
 
 def _to_bgr_uint8(t: torch.Tensor) -> np.ndarray:
@@ -42,6 +53,9 @@ def _to_bgr_uint8(t: torch.Tensor) -> np.ndarray:
 
 
 class QRGuard:
+    quality_ref = None            # per-poster photo-quality ranges (class defaults let subclasses skip __init__)
+    expected_payloads = ()
+
     def __init__(self, checkpoint=DEFAULT_CHECKPOINT, device: torch.device | None = None,
                  threshold: float | None = None, score_mode: str | None = None):
         self.device = device or pick_device()
@@ -52,6 +66,14 @@ class QRGuard:
         self.threshold = float(threshold if threshold is not None else thresholds[self.score_mode])
         # Heatmap colour scale: a fixed multiple of the global-MSE threshold, so genuine stays dark.
         self.heat_vmax = thresholds.get("mean", self.threshold) * HEAT_SCALE
+        # Per-poster reference data: from the checkpoint's stats (enrolled posters) or a "<name>.meta.json"
+        # next to it (the demo model).
+        meta = dict(self.ckpt.get("stats", {}))
+        side = Path(checkpoint).with_suffix(".meta.json")
+        if side.exists():
+            meta.update(json.loads(side.read_text(encoding="utf-8")))
+        self.quality_ref = meta.get("quality")
+        self.expected_payloads = tuple(meta.get("payloads") or ())
 
     @torch.no_grad()
     def reconstruct(self, X: np.ndarray, batch_size: int = 64, mode: str | None = None):
@@ -71,14 +93,45 @@ class QRGuard:
     def analyze(self, bgr: np.ndarray) -> Result:
         arr, patch, corners, payload = preprocess(bgr)
         if arr is None:
-            return Result(status="no_qr", threshold=self.threshold)
+            return Result(status="no_qr", threshold=self.threshold,
+                          reasons=["No QR code could be found in the photo. If the code is covered or damaged, "
+                                   "treat the poster as suspicious."])
         scores, recons, errs = self.reconstruct(arr[None])
         score = float(scores[0])
+        visual_tampered = score > self.threshold
+
+        qm = quality.patch_metrics(arr)
+        issues = quality.check(qm, self.quality_ref)
+        expected = list(self.expected_payloads)
+        match = (payload in expected) if (expected and payload) else None
+        hot = hot_region(errs[0], self.thresholds["local"]) if "local" in self.thresholds else None
+
+        # Decision rule. The autoencoder decides; the URL check can only add a TAMPERED verdict; the quality gate can
+        # only turn a TAMPERED verdict into "retake the photo". Nothing here can create a GENUINE verdict.
+        reasons = []
+        if match is False:
+            status = "tampered"
+            reasons.append("The decoded link or payment ID is different from the one recorded when this poster was enrolled.")
+        elif visual_tampered and issues:
+            status = "unverified"
+        elif visual_tampered:
+            status = "tampered"
+        else:
+            status = "genuine"
+        if visual_tampered:
+            reasons.append(f"The QR area does not look like the enrolled poster (error {score / self.threshold:.1f}x the threshold).")
+        if issues:
+            note = quality.describe(issues)
+            if status == "unverified":
+                reasons.append(f"The photo is {note}, which can make a genuine poster look tampered. Retake it in good light, "
+                               "closer and steadier. If it keeps failing, do not trust the poster.")
+            else:
+                reasons.append(f"The photo is {note} compared with the enrolment photos, so the result may be less reliable.")
         return Result(
-            status="tampered" if score > self.threshold else "genuine",
-            score=score, threshold=self.threshold, payload=payload, patch=patch,
+            status=status, score=score, threshold=self.threshold, payload=payload, patch=patch,
             recon=_to_bgr_uint8(torch.from_numpy(recons[0])), error=errs[0], corners=corners,
-            heat_vmax=self.heat_vmax,
+            heat_vmax=self.heat_vmax, quality=qm, quality_issues=issues, expected_payloads=expected,
+            payload_match=match, hot=hot, reasons=reasons,
         )
 
 
@@ -112,11 +165,13 @@ def annotate_photo(bgr: np.ndarray, res: Result, max_side: int = 900) -> np.ndar
     """Draw the detected QR outline + verdict on the original photo."""
     s = min(1.0, max_side / max(bgr.shape[:2]))
     img = cv2.resize(bgr, None, fx=s, fy=s, interpolation=cv2.INTER_AREA) if s < 1 else bgr.copy()
-    colour = {"genuine": (60, 180, 60), "tampered": (40, 40, 220), "no_qr": (0, 160, 255)}[res.status]
+    colour = {"genuine": (60, 180, 60), "tampered": (40, 40, 220), "unverified": (0, 140, 255),
+              "no_qr": (0, 160, 255)}[res.status]
     if res.corners is not None:
         cv2.polylines(img, [(res.corners * s).astype(np.int32)], True, colour, max(2, img.shape[1] // 200),
                       cv2.LINE_AA)
-    label = {"genuine": "GENUINE", "tampered": "TAMPERED", "no_qr": "NO QR FOUND"}[res.status]
+    label = {"genuine": "GENUINE", "tampered": "TAMPERED", "unverified": "RETAKE PHOTO",
+             "no_qr": "NO QR FOUND"}[res.status]
     if res.score is not None:
         label += f"  score {res.score:.4f} / thr {res.threshold:.4f}"
     fs = img.shape[1] / 900
