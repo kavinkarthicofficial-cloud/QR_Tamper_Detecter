@@ -7,17 +7,21 @@ Pick which poster you are checking, or enrol a new one from a photo of its genui
 
 import argparse
 import base64
+import json
 import re
 import threading
 import time
 import uuid
+from collections import OrderedDict
 
 import cv2
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, abort, jsonify, render_template, request, send_from_directory
 
 from qrguard import config
+from qrguard.agent import investigate
 from qrguard.data import list_images
 from qrguard.detector import QRGuard, annotate_photo, available_posters, heatmap
+from qrguard.evidence import build_evidence
 from qrguard.model import save_checkpoint
 from qrguard.preprocess import decode_image_bytes, find_qr, load_image
 
@@ -30,6 +34,15 @@ POSTER_DIR = config.CHECKPOINT_DIR / "posters"
 _guards: dict[str, QRGuard] = {}
 _jobs: dict[str, dict] = {}
 _enroll_lock = threading.Lock()
+_evidence: OrderedDict[str, dict] = OrderedDict()     # last analysed results, for the Investigator panel
+
+
+def remember(ev: dict) -> str:
+    eid = uuid.uuid4().hex[:12]
+    _evidence[eid] = ev
+    while len(_evidence) > 50:
+        _evidence.popitem(last=False)
+    return eid
 
 
 def get_guard(name: str) -> QRGuard:
@@ -57,7 +70,7 @@ def respond(img, poster: str):
     res = guard.analyze(img)
     ms = (time.perf_counter() - t0) * 1000
     body = {**res.summary(), "poster": poster, "latency_ms": round(ms, 1),
-            "photo": b64(annotate_photo(img, res, 720))}
+            "photo": b64(annotate_photo(img, res, 720)), "evidence_id": remember(build_evidence(res, poster))}
     if res.patch is not None:
         body.update(input=b64(res.patch, 256), recon=b64(res.recon, 256),
                     heat=b64(heatmap(res.error, res.patch, vmax=res.heat_vmax), 256))
@@ -105,6 +118,40 @@ def sample():
     if SAMPLE_DIR.resolve() not in path.parents or not path.is_file():
         return jsonify(error="unknown sample"), 404
     return respond(load_image(path), DEMO)
+
+
+@app.post("/explain")
+def explain():
+    """The Investigator agent explains a result that /analyze or /sample just produced (it cannot change the verdict)."""
+    ev = _evidence.get((request.get_json(silent=True) or {}).get("evidence_id", ""))
+    if ev is None:
+        return jsonify(error="unknown or expired result - analyse the photo again"), 404
+    return jsonify(investigate(ev))
+
+
+# ----------------------------------------------------------------- results page
+def _load(*parts):
+    p = config.RESULTS_DIR.joinpath(*parts)
+    return json.loads(p.read_text(encoding="utf-8")) if p.is_file() else None
+
+
+@app.get("/results")
+def results_page():
+    data = {"main": _load("metrics.json"), "fresh": _load("fresh_test", "metrics.json"),
+            "web": _load("web", "metrics.json"), "baseline": _load("baseline_supervised.json"),
+            "robust": _load("robustness.json"), "robust_web": _load("robustness_web010.json"),
+            "agent": _load("agent_eval.json"),
+            "has": {n: (config.RESULTS_DIR / n).is_file() for n in
+                    ("confusion_matrix.png", "roc_curve.png", "score_histogram.png", "examples.png",
+                     "attacks_gallery.png", "baseline_vs_autoencoder.png", "web/summary.png", "web/examples.png")}}
+    return render_template("results.html", d=data)
+
+
+@app.get("/results/files/<path:name>")
+def results_file(name):
+    if not name.lower().endswith((".png", ".json")):
+        abort(404)
+    return send_from_directory(config.RESULTS_DIR, name)
 
 
 # ----------------------------------------------------------------- enrolment (background job)
