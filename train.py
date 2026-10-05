@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from qrguard import config
+from qrguard import config, quality
 from qrguard.calibration import calibrate
 from qrguard.data import load_folder
 from qrguard.model import ConvAutoencoder, load_checkpoint, pick_device, save_checkpoint
@@ -60,7 +60,8 @@ def main():
 
     thresholds, stats = calibrate(model, Xva, device, args.k_sigma)
     stats.update({"n_train": len(Xtr), "epochs_run": len(history["train"]),
-                  "train_seconds": time.time() - t0, "data": str(data)})
+                  "train_seconds": time.time() - t0, "data": str(data),
+                  "quality": quality.reference_ranges(Xtr)})
     save_checkpoint(out, model, thresholds, stats, score_mode=args.score_mode)
 
     config.RESULTS_DIR.mkdir(exist_ok=True)
@@ -78,7 +79,7 @@ def main():
     for mode, thr in thresholds.items():
         tag = " (default)" if mode == args.score_mode else ""
         print(f"[{mode:5s}] val score mean={stats[mode]['val_mean']:.6f} p99={stats[mode]['val_p99']:.6f} -> "
-              f"threshold (log-space mean+{args.k_sigma}σ) = {thr:.6f}{tag}")
+              f"threshold (log-space mean+{args.k_sigma} sigma) = {thr:.6f}{tag}")
 
 
 if __name__ == "__main__":
