@@ -155,14 +155,20 @@ In the web app (`python3 app.py`), choose the poster from the **Poster** list, o
 poster is selected automatically.
 
 Example with a real web photo the system had never seen (`data/web/raw/web_010.jpg`, enrolled
-in 72 s):
+in about 75 s on mains power):
 
 | Photo checked | Verdict | Score / threshold |
 |---|---|---|
-| the genuine photo | GENUINE | 0.6× |
-| same photo with a pasted sticker | TAMPERED | 11× |
+| the genuine photo | GENUINE | 0.3× |
+| same photo with a pasted sticker | TAMPERED | 11.7× |
 | same photo with a small partial patch | TAMPERED | 11.6× |
-| a completely different QR code | TAMPERED | 14× |
+| a completely different QR code | TAMPERED | 14.1× |
+
+A tightly cropped QR, such as a screenshot with no margin, also works. Enrolment fills the
+missing surroundings with the image's border colour, and the enrolment image makes up about
+10% of the training set. For example, a tightly cropped Wikipedia QR screenshot scored 0.5×
+the threshold when genuine, and 10.6× and 12.4× with a sticker or a patch. Enrolment is about
+2× slower on battery, so plug the laptop in.
 
 **Important:** enrol from photos you know are genuine, for example when the poster is first
 put up. If the enrolment photo already has a sticker on it, QRGuard learns the sticker as the
