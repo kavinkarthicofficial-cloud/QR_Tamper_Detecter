@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QRGuard results</title>
+<style>
+  :root { --bg:#f6f5f2; --surface:#fff; --ink:#1b1b1f; --muted:#5d5d66; --line:#e2e0da; --accent:#8a1538; --ok:#1f7a3a; --bad:#b3261e; --warn:#8a5a00; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141417; --surface:#1d1d22; --ink:#ececf0; --muted:#a2a2ad; --line:#2e2e36; --accent:#e46a8c; --ok:#6fd48c; --bad:#ff8a80; --warn:#ffcc66; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width:1000px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { margin:0; font-size:28px; } h1 span { color:var(--accent); }
+  a { color:var(--accent); }
+  .muted { color:var(--muted); font-size:14px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:18px; }
+  .tile { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+  .tile b { display:block; font-size:26px; line-height:1.15; }
+  .tile span { display:block; color:var(--muted); font-size:13px; margin-top:4px; }
+  details { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:4px 18px; margin-top:12px; }
+  summary { cursor:pointer; padding:12px 0; font-weight:700; font-size:17px; }
+  summary small { font-weight:400; color:var(--muted); font-size:13px; margin-left:8px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; margin:6px 0 12px; }
+  th, td { text-align:left; padding:5px 10px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:600; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
+  .good { color:var(--ok); font-weight:600; } .badc { color:var(--bad); font-weight:600; } .warnc { color:var(--warn); font-weight:600; }
+  .figs { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin:8px 0 14px; }
+  .figs img { width:100%; border-radius:8px; border:1px solid var(--line); background:#fff; }
+  .tabwrap { overflow-x:auto; }
+  .foot { margin-top:14px; border-left:3px solid var(--accent); padding:2px 12px; color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+<main>
+  {% macro pct(x) %}{{ "%.1f"|format(x*100) }}%{% endmacro %}
+  <h1>QR<span>Guard</span> results</h1>
+  <p class="muted"><a href="/">&larr; back to the checker</a> &middot; all numbers are read from <code>results/</code></p>
+
+  <div class="tiles">
+    {% if d.main %}
+    <div class="tile"><b>{{ pct(d.main.accuracy) }}</b><span>accuracy, {{ d.main.n_genuine + d.main.n_tampered }} test photos</span></div>
+    <div class="tile"><b>{{ pct(d.main.recall_tpr) }}</b><span>tampered photos caught</span></div>
+    <div class="tile"><b>{{ pct(d.main.false_positive_rate) }}</b><span>genuine photos wrongly flagged</span></div>
+    {% endif %}
+    {% if d.fresh %}<div class="tile"><b>{{ pct(d.fresh.accuracy) }}</b><span>accuracy on a fresh unseen test set</span></div>{% endif %}
+    {% if d.web %}<div class="tile"><b>{{ pct(d.web.by_mode.local.simulated_shots.detection_rate) }}</b><span>detected on 40 real QR photos</span></div>{% endif %}
+    {% if d.baseline %}{% set pp = d.baseline.folds.partial_patch %}<div class="tile"><b>{{ pct(pp.autoencoder.detection_rate) }} <span style="display:inline;font-size:14px">vs {{ pct(pp.supervised.detection_rate) }}</span></b><span>unseen attack: QRGuard vs a normal classifier</span></div>{% endif %}
+    {% if d.agent and d.agent.template and d.agent.template.cases %}<div class="tile"><b>{{ d.agent.template.passed }}/{{ d.agent.template.cases }}</b><span>agent safety cases passed</span></div>{% endif %}
+  </div>
+
+  {% if d.main %}
+  <details open>
+    <summary>Accuracy <small>synthetic phone photos, never seen by the model</small></summary>
+    <div class="tabwrap"><table>
+      <tr><th>Score</th><th class="n">AUC</th><th class="n">Accuracy</th><th class="n">Recall</th><th class="n">False alarms</th></tr>
+      {% for mode, m in d.main.comparison_by_score_mode.items() %}
+      <tr><td>{{ mode }}{% if mode == d.main.score_mode %} <span class="muted">(used)</span>{% endif %}</td><td class="n">{{ "%.4f"|format(m.roc_auc) }}</td><td class="n">{{ pct(m.accuracy) }}</td><td class="n">{{ pct(m.recall_tpr) }}</td><td class="n">{{ pct(m.false_positive_rate) }}</td></tr>
+      {% endfor %}
+    </table></div>
+    <div class="tabwrap"><table>
+      <tr><th>Attack</th><th class="n">Photos</th><th class="n">Caught</th></tr>
+      {% for k, v in d.main.per_type.items() %}<tr><td>{{ k }}</td><td class="n">{{ v.n }}</td><td class="n">{{ pct(v.detection_rate) }}</td></tr>{% endfor %}
+    </table></div>
+    <div class="figs">
+      {% if d.has["score_histogram.png"] %}<img src="/results/files/score_histogram.png" alt="score histogram">{% endif %}
+      {% if d.has["confusion_matrix.png"] %}<img src="/results/files/confusion_matrix.png" alt="confusion matrix">{% endif %}
+      {% if d.has["roc_curve.png"] %}<img src="/results/files/roc_curve.png" alt="ROC curve">{% endif %}
+    </div>
+  </details>
+  {% else %}
+  <details open><summary>Accuracy</summary><p class="muted">Not generated yet: run <code>python evaluate.py</code>.</p></details>
+  {% endif %}
+
+  {% if d.has["attacks_gallery.png"] %}
+  <details>
+    <summary>How tampered inputs are made <small>4 sticker attacks on the poster, then a simulated phone photo</small></summary>
+    <div class="figs"><img src="/results/files/attacks_gallery.png" alt="genuine poster and each attack"></div>
+  </details>
+  {% endif %}
+
+  {% if d.web %}
+  <details>
+    <summary>Real QR photos <small>40 Wikimedia photos, one model each</small></summary>
+    {% set s = d.web.by_mode.local.simulated_shots %}
+    <div class="tabwrap"><table>
+      <tr><th class="n">Mean AUC</th><th class="n">Tampered caught</th><th class="n">False alarms</th><th class="n">Original photo accepted</th></tr>
+      <tr><td class="n">{{ "%.4f"|format(s.auc_mean) }}</td><td class="n">{{ pct(s.detection_rate) }}</td><td class="n">{{ pct(s.false_positive_rate) }}</td><td class="n">{{ pct(d.web.original_photos.genuine_pass_rate) }}</td></tr>
+    </table></div>
+    {% if d.has["web/summary.png"] %}<div class="figs"><img src="/results/files/web/summary.png" alt="web summary"></div>{% endif %}
+  </details>
+  {% endif %}
+
+  {% if d.baseline %}
+  <details>
+    <summary>Versus a normal classifier <small>trained with labelled attacks, tested on one it never saw</small></summary>
+    <div class="tabwrap"><table>
+      <tr><th>Attack held out</th><th class="n">Classifier</th><th class="n">QRGuard</th></tr>
+      {% for k, f in d.baseline.folds.items() %}
+      <tr><td>{{ k }}</td><td class="n {% if f.supervised.detection_rate < 0.5 %}badc{% endif %}">{{ pct(f.supervised.detection_rate) }}</td><td class="n">{{ pct(f.autoencoder.detection_rate) }}</td></tr>
+      {% endfor %}
+    </table></div>
+  </details>
+  {% endif %}
+
+  {% for key, title in (("robust", "Bad-photo robustness: demo poster"), ("robust_web", "Bad-photo robustness: real-photo poster")) %}
+  {% set r = d[key] %}
+  {% if r %}
+  <details>
+    <summary>{{ title }} <small>"retake" = the photo-quality check asked for a new photo instead of a false alarm</small></summary>
+    <div class="tabwrap"><table>
+      <tr><th>Genuine photo, degraded</th><th class="n">Accepted</th><th class="n">False alarm</th><th class="n">Retake</th></tr>
+      {% for name, v in r.genuine.items() %}
+      <tr><td>{{ name }}</td><td class="n">{{ pct(v.genuine / v.found) }}</td><td class="n {% if v.tampered %}badc{% endif %}">{{ pct(v.tampered / v.found) }}</td><td class="n {% if v.unverified %}warnc{% endif %}">{{ pct(v.unverified / v.found) }}</td></tr>
+      {% endfor %}
+    </table></div>
+    <div class="tabwrap"><table>
+      <tr><th>Tampered photo, degraded</th><th class="n">Caught</th><th class="n">Retake</th><th class="n">Missed</th></tr>
+      {% for name, v in r.tampered.items() %}
+      <tr><td>{{ name }}</td><td class="n">{{ pct(v.tampered / v.found) }}</td><td class="n">{{ pct(v.unverified / v.found) }}</td><td class="n {% if v.missed_as_genuine %}badc{% else %}good{% endif %}">{{ pct(v.missed_as_genuine / v.found) }}</td></tr>
+      {% endfor %}
+    </table></div>
+  </details>
+  {% endif %}
+  {% endfor %}
+
+  {% if d.agent %}
+  <details>
+    <summary>Investigator agent tests <small>includes prompt-injection attempts hidden in the QR text</small></summary>
+    <table>
+      <tr><th>Backend</th><th class="n">Cases</th><th class="n">Passed</th><th class="n">Fell back</th></tr>
+      {% for name, a in d.agent.items() %}
+      <tr><td>{{ name }}{% if a.model %} <span class="muted">({{ a.model }})</span>{% endif %}</td>{% if a.error %}<td colspan="3" class="muted">not run: {{ a.error }}</td>{% else %}<td class="n">{{ a.cases }}</td><td class="n {% if a.passed == a.cases %}good{% else %}badc{% endif %}">{{ a.passed }}</td><td class="n">{{ a.fell_back_to_template }}</td>{% endif %}</tr>
+      {% endfor %}
+    </table>
+  </details>
+  {% endif %}
+
+  <p class="foot">Still simulated: the 40 real photos are real, but the extra shots of each poster are simulated and the stickers are digital, not printed. A physical printed-sticker test has not been done yet.</p>
+</main>
+</body>
+</html>
